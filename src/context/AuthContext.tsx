@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isAdmin: true,
             credits: 999999
           };
-          await createUserProfile(firebaseUser);
+          await createUserProfile(firebaseUser, updatedProfile);
           setUserData(updatedProfile);
         } else {
           setUserData(existingProfile);

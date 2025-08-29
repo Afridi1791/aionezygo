@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, enableNetwork, disableNetwork } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -16,6 +16,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
 
 // Set persistence to LOCAL to maintain auth state across page refreshes
 try {
@@ -58,6 +63,9 @@ export const signInWithEmail = (email: string, password: string) =>
 export const signUpWithEmail = (email: string, password: string) => 
   createUserWithEmailAndPassword(auth, email, password);
 
+export const signInWithGoogle = () => 
+  signInWithPopup(auth, googleProvider);
+
 export const logout = () => signOut(auth);
 
 // Auth state listener
@@ -78,26 +86,33 @@ export interface UserData {
 }
 
 // Firestore functions
-export const createUserProfile = async (user: User) => {
+export const createUserProfile = async (user: User, existingData?: Partial<UserData>) => {
   // Check if user profile already exists
-  const existingProfile = await getUserProfile(user.uid);
-  if (existingProfile) {
-    // Update admin status for existing users
-    const isAdmin = user.email === 'afridigt7@gmail.com';
-    if (isAdmin && !existingProfile.isAdmin) {
-      const updatedProfile = {
-        ...existingProfile,
-        isAdmin: true,
-        credits: 999999
-      };
-      await setDoc(doc(db, 'users', user.uid), updatedProfile);
-      return updatedProfile;
+  if (!existingData) {
+    const existingProfile = await getUserProfile(user.uid);
+    if (existingProfile) {
+      // Update admin status for existing users
+      const isAdmin = user.email === 'afridigt7@gmail.com';
+      if (isAdmin && !existingProfile.isAdmin) {
+        const updatedProfile = {
+          ...existingProfile,
+          isAdmin: true,
+          credits: 999999
+        };
+        await setDoc(doc(db, 'users', user.uid), updatedProfile);
+        return updatedProfile;
+      }
+      return existingProfile;
     }
-    return existingProfile;
   }
 
   const isAdmin = user.email === 'afridigt7@gmail.com';
-  const userData: UserData = {
+  const userData: UserData = existingData ? {
+    ...existingData,
+    uid: user.uid,
+    email: user.email || '',
+    displayName: user.displayName || existingData.displayName || user.email?.split('@')[0] || 'User',
+  } : {
     uid: user.uid,
     email: user.email || '',
     displayName: user.displayName || user.email?.split('@')[0] || 'User',
