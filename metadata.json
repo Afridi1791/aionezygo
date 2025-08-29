@@ -1,0 +1,6 @@
+{
+  "name": "OneZygo",
+  "description": "OneZygo is an AI-powered development partner that can read an entire project's context and autonomously perform edits, create files, and enhance code based on user instructions in a chat interface.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
